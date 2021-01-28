@@ -37,9 +37,6 @@ for (tempname.gtex in list.gtex[,1]) {
         bim=read.table(inNameBim,stringsAsFactors=F)
         tcga=read.table(inNameGWAS,header=T,stringsAsFactors=F)
 
-        snp.idx.gtex=loci[loci[,1]==rsid,5]
-        snp.idx.tcga.geno=loci[loci[,1]==rsid,6]
-        snp.idx.tcga.gwas=loci[loci[,1]==rsid,7]
         bp.idx.b38=loci[loci[,1]==rsid,3]
 
         snpid1=paste(paste0('chr',bim[,1]),bim[,4],bim[,5],bim[,6],'b38',sep='_')
