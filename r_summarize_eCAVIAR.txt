@@ -1,0 +1,59 @@
+inNameList='list_c1_col.txt'
+inNameMerged='/wynton/home/burchard/dhu/gtex_tcga/eQTL_Sugg/Merged_gtex_tcga_eqtl_sugg_index_snp.txt'
+inNameLoci='/wynton/home/burchard/dhu/gtex_tcga/eQTL_Sugg/Loci_unique_in_Merged_gtex_tcga_eqtl_sugg_index_snp.txt'
+outName='Result_Summary_eCAVIAR_eQTL_sugg.txt'
+outNameErr='Error_Result_Summary_eCAVIAR_eQTL_sugg.txt'
+
+write.table(NULL,'Error_Result_Summary_eCAVIAR_sQTL.txt',quote=F,sep='\t',row.names=F,col.names=F)
+
+list.col=read.table(inNameList,stringsAsFactors=F)
+merged=read.table(inNameMerged,header=T,stringsAsFactors=F,sep='\t')
+id.merged=paste(merged$GTEx.tissues,merged$EnsDb.Hsapiens.v86.GeneSYM,merged$TCGA.Germline.GWAS.SNPlist.Annot.SNPlocs.RefSNP_id,merged$Trait,sep='_')
+merged.sub=cbind(merged[,c('GTEx.pval_nominal','TCGA.Germline.GWAS.SNPlist.SNP.MIN.PLINK.PVAL')],id.merged)
+
+result=NULL
+for (tempname.c1 in list.col[,1]) {
+	tempname.c2=gsub('_c1_','_c2_',tempname.c1)
+        temp1=gsub('.txt_col','',tempname.c1)
+        temp2=strsplit(temp1,'_')
+        nlen=length(temp2[[1]])
+        tempsnp=temp2[[1]][nlen]
+        tempgene=temp2[[1]][nlen-1]
+        tempensembl=temp2[[1]][4]
+        temptissue=paste(temp2[[1]][5:(nlen-2)],collapse='_')
+	loci=read.table(inNameLoci,header=T,stringsAsFactors=F)
+        temppheno=loci[loci$rsid==tempsnp,ncol(loci)]
+        tempb37=loci[loci$rsid==tempsnp,4]
+        tempb38=loci[loci$rsid==tempsnp,3]
+        tempchr=loci[loci$rsid==tempsnp,2]
+	templocus=loci[loci$rsid==tempsnp,(ncol(loci)-1)]
+
+	tempcol.c1=read.table(tempname.c1,header=T,stringsAsFactors=F)
+	tempind.c1=grep(tempb38,tempcol.c1[,1])
+	tempclpp.snp.c1=tempcol.c1[tempind.c1,3]
+	tempclpp.sum.c1=sum(tempcol.c1[,3])
+	
+	tempcol.c2=read.table(tempname.c2,header=T,stringsAsFactors=F)
+	tempind.c2=grep(tempb38,tempcol.c2[,1])
+        tempclpp.snp.c2=tempcol.c2[tempind.c2,3]
+        tempclpp.sum.c2=sum(tempcol.c2[,3])
+
+	tempresult=c(tempchr,tempb37,tempb38,tempsnp,templocus,tempgene,tempensembl,temptissue,temppheno,tempclpp.snp.c1,tempclpp.sum.c1,tempclpp.snp.c2,tempclpp.sum.c2)
+	if (length(tempresult)==13) {
+		result=rbind(result,tempresult)
+	} else {
+		write.table(tempname.c1,outNameErr,quote=F,sep='\t',row.names=F,col.names=F,append=T)
+	}
+}
+
+id.summ=paste(result[,8],result[,6],result[,4],result[,9],sep='_')
+result=cbind(result,id.summ)
+
+merge1=merge(result,merged.sub,by.x=ncol(result),by.y='id.merged')
+result=merge1[,2:ncol(merge1)]
+
+colnames(result)=c('CHR','BP.37','BP.38','Index_SNP','Locus','Gene','Ensembl','Tissue','Trait','SNP_CLPP_c1','Region_CLPP_c1','SNP_CLPP_c2','Region_CLPP_c2','P.gtex','P.tcga')
+write.table(result,outName,quote=F,sep='\t',row.names=F)
+
+rm(list=ls())
+
